@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>쿠지 운 테스트 시뮬레이터</title>
+  <style>
+    :root {
+      --bg-color: #F7F3F2;
+      --card-bg: #FFFFFF;
+      --primary-color: #C62828;
+      --text-color: #333333;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin: 0 0 12px 0;
+      color: #102037;
+    }
+
+    .status-box {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    /* 일반 뽑기 버튼 스타일 */
+    button {
+      background-color: /*#FFF9E6*/ #5c85bd;
+      border: none;
+      color: /*#263B58*/ #FFF9E6;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background-color: #263B58;
+    }
+
+    /* 추첨 기록 초기화 전용 커스텀 버튼 스타일 */
+    button.reset-btn {
+      width: 100%;
+      margin-top: 20px;
+      background-color: #FFEBEE;
+      border: none;
+      color: #C62828;
+    }
+
+    button.reset-btn:hover {
+      background-color: #FFCDD2;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .result-item {
+      border: 1px solid #E0E0E0;
+      border-radius: 10px;
+      padding: 10px;
+      background: #FAFAFA;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .result-item img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .rank-badge {
+      background: var(--primary-color);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .item-name {
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    .item-count {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    details summary {
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    /* 1~10 수량 조절 버튼 영역 */
+    .stepper-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    }
+
+    .stepper-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 1.2rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
+
+    .stepper-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+    width: 50px;
+    text-align: center;
+    color: #263B58;
+    }
+
+    /* 수량 지정 뽑기 메인 버튼 */
+    .custom-draw-btn {
+    width: 100%;
+    background-color: #263B58;
+    color: #FFFFFF;
+    border: 1px solid #263B58;
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+    }
+
+    .custom-draw-btn:hover {
+    background-color: #1D2D44;
+    }
+
+    /* 하단 1, 3, 5, 10회 빠른 버튼을 4열 1줄로 변경 */
+    .btn-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 기존 repeat(2, 1fr)에서 수정 */
+    gap: 8px;
+    }
+
+    .btn-grid button {
+    padding: 8px 4px;
+    font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 상단 카드: 뽑기 컨트롤 및 초기화 -->
+  <div class="card">
+    <h1>🎯 앰포리어스 이치방쿠지 시뮬레이터</h1>
+    <div class="status-box">
+      총 추첨 횟수: <span id="total-count" style="color: var(--primary-color);">0</span>회
+    </div>
+
+    <div style="font-size: 0.9rem; margin-bottom: 16px; color: #565656;">몇 회 추첨할까요?</div>
+
+    <!-- [-] [숫자] [+] 스태퍼 컨트롤러 추가 -->
+    <div class="stepper-container">
+    <button class="stepper-btn" onclick="changeCount(-1)">-</button>
+    <span class="stepper-value" id="custom-count-display">1</span>
+    <button class="stepper-btn" onclick="changeCount(1)">+</button>
+    </div>
+
+    <!-- 설정된 횟수로 뽑는 실행 버튼 추가 -->
+    <button class="custom-draw-btn" id="custom-draw-btn" onclick="drawCustomKuji()">1회 뽑기</button>
+
+    <!-- 빠른 선택 버튼 (4열 구성으로 변경) -->
+    <div class="btn-grid">
+    <button onclick="quickDraw(1)">1회</button>
+    <button onclick="quickDraw(3)">3회</button>
+    <button onclick="quickDraw(5)">5회</button>
+    <button onclick="quickDraw(10)">10회</button>
+    </div>
+
+    <!-- 이동 및 색상 변경된 초기화 버튼 -->
+    <button class="reset-btn" onclick="resetHistory()">추첨 기록 초기화</button>
+    <div style="font-size: 0.75rem; color: #767676; margin-top: 16px;">
+      * 초기화 시 당첨 확률은 유지되며 누적 기록만 사라집니다.
+    </div>
+  </div>
+
+  <!-- 이번 뽑기 결과 -->
+  <div class="card">
+    <!-- 타이틀 옆에 (총 0개) 표시 영역 추가 -->
+    <div style="font-size: 1.1rem; font-weight: bold;">🎉 이번 뽑기 결과<span id="current-draw-total" style="font-size: 0.95rem; color: #E65100; font-weight: normal; margin-left: 6px;">(총 0개)</span></div>
+    <div id="current-result" class="result-grid">
+      <div style="grid-column: span 2; color: #888; padding: 20px 0;">
+        쿠지를 뽑아 운을 시험해 보세요!
+      </div>
+    </div>
+  </div>
+
+  <!-- 누적 당첨 보관함 -->
+  <div class="card">
+    <details>
+      <summary>📦 누적 당첨 보관함 보기</summary>
+      <div id="accumulated-result" class="result-grid" style="margin-top: 15px;">
+        <div style="grid-column: span 2; color: #888; padding: 10px 0;">뽑은 내역이 없습니다.</div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 독립된 상품별 당첨 확률 섹션 -->
+  <div class="card">
+    <details>
+      <summary>📊 상품별 당첨 확률 보기</summary>
+      <div style="text-align: left; font-size: 0.85rem; line-height: 1.6; color: #444; margin-top: 15px;">
+        * 총 72장 독립 시행 확률 (항상 동일 확률)<br>
+        - A상: 2/72 (약 2.78%)<br>
+        - B상: 2/72 (약 2.78%)<br>
+        - C상: 2/72 (약 2.78%)<br>
+        - D상: 6/72 (약 8.33%, 랜덤 블라인드)<br>
+        - E상: 8/72 (약 11.11%, 선택)<br>
+        - F상: 13/72 (약 18.06%, 랜덤)<br>
+        - G상: 26/72 (약 36.11%, 랜덤)<br>
+        - H상: 13/72 (약 18.06%, 선택)
+      </div>
+    </details>
+  </div>
+</div>
+
+<script>
+  const KUJI_ITEMS = [
+    { rank: 'A상', name: 'A상 인형', weight: 2, image: 'img/a.jpg' },
+    { rank: 'B상', name: 'B상 인형', weight: 2, image: 'img/b.jpg' },
+    { rank: 'C상', name: 'C상 인형', weight: 2, image: 'img/c.jpg' },
+    { rank: 'D상', name: 'D상 광추 아크릴(랜덤)', weight: 6, image: 'img/d.jpg' },
+    { rank: 'E상', name: 'E상 손목 밴드(선택)', weight: 8, image: 'img/e.jpg' },
+    { rank: 'F상', name: 'F상 도자기 접시(랜덤)', weight: 13, image: 'img/f.jpg' },
+    { rank: 'G상', name: 'G상 아크릴(랜덤)', weight: 26, image: 'img/g.jpg' },
+    { rank: 'H상', name: 'H상 티켓, a4 파일홀더(선택)', weight: 13, image: 'img/h.jpg' }
+  ];
+
+  const TOTAL_WEIGHT = 72;
+
+  let totalDrawCount = 0;
+  let selectedCount = 1; // 기본 선택 수량
+  let accumulatedInventory = {};
+  let sessionResults = {}; // 초기화 전까지 이번 세션 당첨 결과를 누적할 변수
+
+  // 수량 조절 함수 (1~10 제한)
+  function changeCount(delta) {
+    let newCount = selectedCount + delta;
+    if (newCount >= 1 && newCount <= 10) {
+      selectedCount = newCount;
+      updateCountDisplay();
+    }
+  }
+
+  // 빠른 선택 버튼 클릭 시 수량 반영 후 즉시 실행
+  function quickDraw(count) {
+    selectedCount = count;
+    updateCountDisplay();
+    drawKuji(count);
+  }
+
+  // 조절된 수량으로 뽑기 실행
+  function drawCustomKuji() {
+    drawKuji(selectedCount);
+  }
+
+  // 수량 표시 UI 업데이트
+  function updateCountDisplay() {
+    document.getElementById('custom-count-display').innerText = selectedCount;
+    document.getElementById('custom-draw-btn').innerText = selectedCount + '회 뽑기';
+  }
+
+  function getRandomItem() {
+    let rand = Math.floor(Math.random() * TOTAL_WEIGHT);
+    for (let item of KUJI_ITEMS) {
+      if (rand < item.weight) {
+        return item;
+      }
+      rand -= item.weight;
+    }
+    return KUJI_ITEMS[KUJI_ITEMS.length - 1];
+  }
+
+  function drawKuji(count) {
+    totalDrawCount += count;
+    document.getElementById('total-count').innerText = totalDrawCount;
+
+    for (let i = 0; i < count; i++) {
+        let drawn = getRandomItem();
+        
+        // 이번 세션 결과에 누적 (+1)
+        sessionResults[drawn.rank] = (sessionResults[drawn.rank] || 0) + 1;
+        
+        // 보관함 결과에 누적 (+1)
+        accumulatedInventory[drawn.rank] = (accumulatedInventory[drawn.rank] || 0) + 1;
+    }
+
+    // 누적된 sessionResults를 전달하여 화면 갱신
+    renderCurrentResult(sessionResults);
+    renderAccumulatedResult();
+ }
+
+    function renderCurrentResult(results) {
+    const container = document.getElementById('current-result');
+    container.innerHTML = '';
+
+    let currentTotalCount = 0; // 이번 세션 총 개수 계산용
+
+    for (let item of KUJI_ITEMS) {
+        if (results[item.rank]) {
+        currentTotalCount += results[item.rank]; // 수량 누적 합산
+
+        const div = document.createElement('div');
+        div.className = 'result-item';
+        div.innerHTML = `
+            <img src="${item.image}" alt="${item.rank}">
+            <span class="rank-badge">${item.rank}</span>
+            <span class="item-name">${item.name}</span>
+            <span class="item-count">× ${results[item.rank]}개</span>
+        `;
+        container.appendChild(div);
+        }
+    }
+
+    // 상단 타이틀 옆 (총 XX개) 텍스트 실시간 업데이트
+    document.getElementById('current-draw-total').innerText = `(총 ${currentTotalCount}개)`;
+    }
+
+  function renderAccumulatedResult() {
+    const container = document.getElementById('accumulated-result');
+    container.innerHTML = '';
+
+    let hasData = false;
+    for (let item of KUJI_ITEMS) {
+      if (accumulatedInventory[item.rank]) {
+        hasData = true;
+        const div = document.createElement('div');
+        div.className = 'result-item';
+        div.innerHTML = `
+          <img src="${item.image}" alt="${item.rank}">
+          <span class="rank-badge">${item.rank}</span>
+          <span class="item-name">${item.name}</span>
+          <span class="item-count">누적 ${accumulatedInventory[item.rank]}개</span>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    if (!hasData) {
+      container.innerHTML = `<div style="grid-column: span 2; color: #888; padding: 10px 0;">뽑은 내역이 없습니다.</div>`;
+    }
+  }
+
+  // 2. 초기화 함수(resetHistory) 내 수량 리셋 로직 추가
+    function resetHistory() {
+    if (confirm('추첨 기록과 누적 보관함을 초기화하시겠습니까? (당첨 확률은 그대로 유지됩니다)')) {
+        totalDrawCount = 0;
+        sessionResults = {}; 
+        accumulatedInventory = {};
+        
+        document.getElementById('total-count').innerText = 0;
+        // 초기화 시 총 개수도 (총 0개)로 리셋
+        document.getElementById('current-draw-total').innerText = '(총 0개)';
+        
+        document.getElementById('current-result').innerHTML = `
+        <div style="grid-column: span 2; color: #888; padding: 20px 0;">
+            쿠지를 뽑아 운을 시험해 보세요!
+        </div>`;
+        renderAccumulatedResult();
+    }
+  }
+</script>
+
+</body>
+</html>
