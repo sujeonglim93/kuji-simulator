@@ -231,7 +231,7 @@
   <!-- 이번 뽑기 결과 -->
   <div class="card">
     <!-- 타이틀 옆에 (총 0개) 표시 영역 추가 -->
-    <div style="font-size: 1.1rem; font-weight: bold;">🎉 이번 뽑기 결과<span id="current-draw-total" style="font-size: 0.95rem; color: #E65100; font-weight: normal; margin-left: 6px;">(총 0개)</span></div>
+    <div style="font-size: 1.1rem; font-weight: bold;">🎉 이번 뽑기 결과<span id="current-draw-total" style="font-size: 0.95rem; color: #E65100; font-weight: normal; margin-left: 6px;">(0개)</span></div>
     <div id="current-result" class="result-grid">
       <div style="grid-column: span 2; color: #888; padding: 20px 0;">
         쿠지를 뽑아 운을 시험해 보세요!
@@ -255,14 +255,14 @@
       <summary>📊 상품별 당첨 확률 보기</summary>
       <div style="text-align: left; font-size: 0.85rem; line-height: 1.6; color: #444; margin-top: 15px;">
         * 총 72장 독립 시행 확률 (항상 동일 확률)<br>
-        - A상: 2/72 (약 2.78%)<br>
-        - B상: 2/72 (약 2.78%)<br>
-        - C상: 2/72 (약 2.78%)<br>
-        - D상: 6/72 (약 8.33%, 랜덤 블라인드)<br>
-        - E상: 8/72 (약 11.11%, 선택)<br>
-        - F상: 13/72 (약 18.06%, 랜덤)<br>
-        - G상: 26/72 (약 36.11%, 랜덤)<br>
-        - H상: 13/72 (약 18.06%, 선택)
+        - A상 인형: 2/72 (약 2.78%)<br>
+        - B상 인형: 2/72 (약 2.78%)<br>
+        - C상 인형: 2/72 (약 2.78%)<br>
+        - D상 광추 아크릴: 6/72 (약 8.33%, 랜덤)<br>
+        - E상 손목 밴드: 8/72 (약 11.11%, 선택)<br>
+        - F상 도자기 접시: 13/72 (약 18.06%, 랜덤)<br>
+        - G상 아크릴: 26/72 (약 36.11%, 랜덤)<br>
+        - H상 티켓과 a4 파일홀더: 13/72 (약 18.06%, 선택)
       </div>
     </details>
   </div>
@@ -329,46 +329,45 @@
     totalDrawCount += count;
     document.getElementById('total-count').innerText = totalDrawCount;
 
+    // '이번 뽑기 결과'는 클릭할 때마다 0에서 시작 (매번 새로 갱신)
+    let currentDrawResults = {};
+
     for (let i = 0; i < count; i++) {
-        let drawn = getRandomItem();
-        
-        // 이번 세션 결과에 누적 (+1)
-        sessionResults[drawn.rank] = (sessionResults[drawn.rank] || 0) + 1;
-        
-        // 보관함 결과에 누적 (+1)
-        accumulatedInventory[drawn.rank] = (accumulatedInventory[drawn.rank] || 0) + 1;
+      let drawn = getRandomItem();
+      
+      // 이번 뽑기 결과에만 합산
+      currentDrawResults[drawn.rank] = (currentDrawResults[drawn.rank] || 0) + 1;
+      
+      // 누적 보관함에는 계속 쌓임
+      accumulatedInventory[drawn.rank] = (accumulatedInventory[drawn.rank] || 0) + 1;
     }
 
-    // 누적된 sessionResults를 전달하여 화면 갱신
-    renderCurrentResult(sessionResults);
+    // 이번 뽑은 결과(currentDrawResults)와 뽑은 횟수(count) 전달
+    renderCurrentResult(currentDrawResults, count);
     renderAccumulatedResult();
- }
+  }
 
-    function renderCurrentResult(results) {
+    function renderCurrentResult(results, count) {
     const container = document.getElementById('current-result');
     container.innerHTML = '';
 
-    let currentTotalCount = 0; // 이번 세션 총 개수 계산용
-
     for (let item of KUJI_ITEMS) {
-        if (results[item.rank]) {
-        currentTotalCount += results[item.rank]; // 수량 누적 합산
-
+      if (results[item.rank]) {
         const div = document.createElement('div');
         div.className = 'result-item';
         div.innerHTML = `
-            <img src="${item.image}" alt="${item.rank}">
-            <span class="rank-badge">${item.rank}</span>
-            <span class="item-name">${item.name}</span>
-            <span class="item-count">× ${results[item.rank]}개</span>
+          <img src="${item.image}" alt="${item.rank}">
+          <span class="rank-badge">${item.rank}</span>
+          <span class="item-name">${item.name}</span>
+          <span class="item-count">× ${results[item.rank]}개</span>
         `;
         container.appendChild(div);
-        }
+      }
     }
 
-    // 상단 타이틀 옆 (총 XX개) 텍스트 실시간 업데이트
-    document.getElementById('current-draw-total').innerText = `(총 ${currentTotalCount}개)`;
-    }
+    // 상단 타이틀 옆 (방금 뽑은 횟수) 표시 (예: 방금 5개)
+    document.getElementById('current-draw-total').innerText = `(${count}개)`;
+  }
 
   function renderAccumulatedResult() {
     const container = document.getElementById('accumulated-result');
@@ -396,21 +395,20 @@
   }
 
   // 2. 초기화 함수(resetHistory) 내 수량 리셋 로직 추가
-    function resetHistory() {
-    if (confirm('추첨 기록과 누적 보관함을 초기화하시겠습니까? (당첨 확률은 그대로 유지됩니다)')) {
-        totalDrawCount = 0;
-        sessionResults = {}; 
-        accumulatedInventory = {};
-        
-        document.getElementById('total-count').innerText = 0;
-        // 초기화 시 총 개수도 (총 0개)로 리셋
-        document.getElementById('current-draw-total').innerText = '(총 0개)';
-        
-        document.getElementById('current-result').innerHTML = `
+  function resetHistory() {
+    if (confirm('추첨 기록과 누적 보관함을 모두 초기화하시겠습니까? (당첨 확률은 그대로 유지됩니다)')) {
+      totalDrawCount = 0;
+      accumulatedInventory = {}; // 누적 보관함 비우기
+      
+      document.getElementById('total-count').innerText = 0;
+      document.getElementById('current-draw-total').innerText = '(총 0개)';
+      
+      document.getElementById('current-result').innerHTML = `
         <div style="grid-column: span 2; color: #888; padding: 20px 0;">
-            쿠지를 뽑아 운을 시험해 보세요!
+          쿠지를 뽑아 운을 시험해 보세요!
         </div>`;
-        renderAccumulatedResult();
+        
+      renderAccumulatedResult(); // 누적 보관함도 초기화 상태로 갱신
     }
   }
 </script>
