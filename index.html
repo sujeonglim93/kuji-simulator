@@ -298,6 +298,7 @@
   let selectedCount = 1; // 기본 선택 수량
   let accumulatedInventory = {};
   let sessionResults = {}; // 초기화 전까지 이번 세션 당첨 결과를 누적할 변수
+  let currentDeck = []; // 현재 남은 쿠지 판 데이터 (72장)
 
   // 수량 조절 함수 (1~10 제한)
   function changeCount(delta) {
@@ -326,15 +327,32 @@
     document.getElementById('custom-draw-btn').innerText = selectedCount + '회 뽑기';
   }
 
-  function getRandomItem() {
-    let rand = Math.floor(Math.random() * TOTAL_WEIGHT);
+  // 판 초기화 함수 (72장의 제비 상자 생성)
+  function initDeck() {
+    currentDeck = [];
     for (let item of KUJI_ITEMS) {
-      if (rand < item.weight) {
-        return item;
+      for (let i = 0; i < item.weight; i++) {
+        currentDeck.push(item); // 수량(weight)만큼 배열에 넣기
       }
-      rand -= item.weight;
     }
-    return KUJI_ITEMS[KUJI_ITEMS.length - 1];
+  }
+
+  // 최초 1회 실행하여 판 생성
+  initDeck();
+
+  // 랜덤 1개 뽑기 함수 (비복원 추출)
+  function getRandomItem() {
+    // 판에 남은 쿠지가 없으면 자동으로 새 판(72장) 생성
+    if (currentDeck.length === 0) {
+      alert('한 판(72장)을 모두 소진하여 새 판으로 교체합니다!');
+      initDeck();
+    }
+
+    // 남은 제비 중 무작위 하나 선택 후 판에서 제거
+    const randomIndex = Math.floor(Math.random() * currentDeck.length);
+    const selectedItem = currentDeck.splice(randomIndex, 1)[0];
+    
+    return selectedItem;
   }
 
   function drawKuji(count) {
@@ -406,46 +424,46 @@
     }
   }
 
-  // 1. 전체 초기화 함수 수정 (횟수 조절 컨트롤러 초기화 로직 추가)
-function resetHistory() {
-  if (confirm('추첨 기록과 누적 보관함을 모두 초기화하시겠습니까? (당첨 확률은 그대로 유지됩니다)')) {
-    totalDrawCount = 0;
-    accumulatedInventory = {}; 
-    
-    // 횟수 컨트롤러 및 버튼 상태 초기화 (1회로 세팅)
-    selectedCount = 1;
-    updateCountDisplay();
+  // 4. 초기화 버튼(resetHistory) 클릭 시 판도 새 판으로 리셋
+    function resetHistory() {
+      if (confirm('추첨 기록과 누적 보관함을 모두 초기화하시겠습니까?')) {
+        totalDrawCount = 0;
+        accumulatedInventory = {}; 
+        initDeck(); // 쿠지 판 리셋
+        
+        selectedCount = 1;
+        updateCountDisplay();
 
-    document.getElementById('total-count').innerText = 0;
-    document.getElementById('current-draw-total').innerText = '(방금 0개)';
-    
-    document.getElementById('current-result').innerHTML = `
-      <div style="grid-column: span 2; color: #888; padding: 20px 0;">
-        쿠지를 뽑아 운을 시험해 보세요!
-      </div>`;
-      
-    renderAccumulatedResult();
-  }
-}
+        document.getElementById('total-count').innerText = 0;
+        document.getElementById('current-draw-total').innerText = '(방금 0개)';
+        
+        document.getElementById('current-result').innerHTML = `
+          <div style="grid-column: span 2; color: #888; padding: 20px 0;">
+            쿠지를 뽑아 운을 시험해 보세요!
+          </div>`;
+          
+        renderAccumulatedResult();
+      }
+    }
 
-// 2. 카드 영역을 이미지 파일(.png)로 저장하는 함수 신규 추가
-function saveAsImage(cardId, fileName) {
-  const targetElement = document.getElementById(cardId);
+  // 2. 카드 영역을 이미지 파일(.png)로 저장하는 함수 신규 추가
+    function saveAsImage(cardId, fileName) {
+      const targetElement = document.getElementById(cardId);
 
-  // 저장 중 버튼 클릭 방지 및 UI 깔끔하게 처리
-  html2canvas(targetElement, {
-    scale: 2, // 화질 향상을 위해 2배 배율 적용
-    backgroundColor: '#FFFFFF'
-  }).then(canvas => {
-    const link = document.createElement('a');
-    link.download = `${fileName}_${new Date().toISOString().slice(2, 10)}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  }).catch(err => {
-    alert('이미지 저장 중 오류가 발생했습니다.');
-    console.error(err);
-  });
-}
+      // 저장 중 버튼 클릭 방지 및 UI 깔끔하게 처리
+      html2canvas(targetElement, {
+        scale: 2, // 화질 향상을 위해 2배 배율 적용
+        backgroundColor: '#FFFFFF'
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `${fileName}_${new Date().toISOString().slice(2, 10)}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }).catch(err => {
+        alert('이미지 저장 중 오류가 발생했습니다.');
+        console.error(err);
+      });
+    }
 </script>
 
 </body>
